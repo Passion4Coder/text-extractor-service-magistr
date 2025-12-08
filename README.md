@@ -1,4 +1,4 @@
-# ExtractLab (Document Extractor Service)
+# ExtractLab (Text Extractor Service)
 
 ## VENV
 
@@ -16,7 +16,8 @@ uvicorn app.main:app --reload
 ## Packages
 
 ```bash
-pip install "fastapi[standard]" pydantic-settings python-docx PyPDF2 pandas textract --no-dependencies
+pip install --upgrade "pip<24.1"
+pip install "fastapi[standard]" pydantic-settings python-docx PyPDF2 pandas textract SQLAlchemy asyncpg --no-dependencies
 ```
 
 ## Update `requirements.txt`:
@@ -28,15 +29,19 @@ pip freeze > requirements.txt
 ## Docker
 
 ```bash
-docker build . -t dmytrohrunytskyi/document-extractor-service:latest
+docker build . -t dmytrohrunytskyi/text-extractor-service:latest
 ```
 
 ```bash
 docker run \
-  --name document-extractor-service \
+  --name text-extractor-service \
   -it \
   --rm \
-  -p 8000:8000 \
+  -p 8002:8002 \
   -v "/${PWD}/app:/app/app" \
-  dmytrohrunytskyi/document-extractor-service:latest
+  dmytrohrunytskyi/text-extractor-service:latest
+```
+
+```bash
+docker-compose up --build
 ```

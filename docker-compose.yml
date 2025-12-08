@@ -1,0 +1,14 @@
+name: text_extractor_service
+
+services:
+  extractor_service:
+    build: .
+    container_name: extractor_service
+    ports:
+      - '8002:8002'
+    environment:
+      POSTGRES_URL: 'postgresql+asyncpg://neondb_owner:npg_RzT4slbtx8Dw@ep-wispy-mud-ag3qh0r3.c-2.eu-central-1.aws.neon.tech/neondb'
+      CORS_ORIGINS: http://localhost:4200
+    working_dir: /app
+    volumes:
+      - ./app:/app/app

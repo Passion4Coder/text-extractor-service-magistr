@@ -4,9 +4,10 @@ from pydantic import BaseModel
 
 
 class ExtractTextResponse(BaseModel):
-    filename: str
-    text: str
-    char_count: int
+    text_id: int
+
+    def __init__(self, text_id: int):
+        super().__init__(text_id=text_id)
 
 
 class FileExtractor:

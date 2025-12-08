@@ -5,6 +5,6 @@ from fastapi import FastAPI
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("app ready!")
+    print("DBs ready!")
     yield
-    print("app turn off.")
+    print("DBs turn off.")

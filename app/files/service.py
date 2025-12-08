@@ -1,7 +1,10 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import async_session_factory
 from app.files.extractors import (
     extract_text_from_csv,
     extract_text_from_doc,
@@ -10,7 +13,8 @@ from app.files.extractors import (
     extract_text_from_pptx,
     extract_text_from_txt,
 )
-from app.files.schemas import ExtractTextResponse, FileExtractor
+from app.files.models import TextOrm
+from app.files.schemas import FileExtractor
 from app.files.utils import get_file_extension
 
 FILE_EXTRACTORS: Dict[str, FileExtractor] = {
@@ -25,7 +29,7 @@ FILE_EXTRACTORS: Dict[str, FileExtractor] = {
 SUPPORTED_FILE_TYPES = ", ".join(extractor.file_type for extractor in FILE_EXTRACTORS.values())
 
 
-async def extract_text(file: UploadFile) -> ExtractTextResponse:
+async def extract_text(file: UploadFile) -> str:
     try:
         content = await file.read()
 
@@ -39,7 +43,26 @@ async def extract_text(file: UploadFile) -> ExtractTextResponse:
                 status_code=400, detail=f"Непідтримуваний формат файлу. Підтримуються: {SUPPORTED_FILE_TYPES}"
             )
 
-        return ExtractTextResponse(filename=file.filename, text=text, char_count=len(text))
+        return text
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Помилка обробки файлу: {str(e)}")
+
+
+async def get_text_id_by_content(session: AsyncSession, content: str) -> Optional[int]:
+    async with async_session_factory() as session:
+        text_result = await session.execute(select(TextOrm).where(TextOrm.content == content))
+        text_entity = text_result.scalar_one_or_none()
+
+        if text_entity:
+            return text_entity.id
+
+
+async def save_text(session: AsyncSession, text: str, source_type: str) -> int:
+    async with async_session_factory() as session:
+        text_entity = TextOrm(content=text, language="uk", source_type=source_type)
+
+        session.add(text_entity)
+        await session.commit()
+
+        return text_entity.id
