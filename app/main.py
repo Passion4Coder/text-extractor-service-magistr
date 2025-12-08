@@ -4,12 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.files.router import router as files_router
+from app.extractors.router import router as extractors_router
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
-    app.include_router(files_router)
+    app.include_router(extractors_router)
 
     app.add_middleware(
         CORSMiddleware,

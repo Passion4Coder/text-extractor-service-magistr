@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
-from app.files.extractors import (
+from app.extractors.file_extractors import (
     extract_text_from_csv,
     extract_text_from_doc,
     extract_text_from_docx,
@@ -13,9 +13,13 @@ from app.files.extractors import (
     extract_text_from_pptx,
     extract_text_from_txt,
 )
-from app.files.models import TextOrm
-from app.files.schemas import FileExtractor
-from app.files.utils import get_file_extension
+from app.extractors.models import TextOrm
+from app.extractors.schemas import FileExtractor
+from app.extractors.url_extractors import (
+    extract_text_from_url_page,
+    extract_text_from_url_pdf,
+)
+from app.extractors.utils import fetch_url_content, get_file_extension
 
 FILE_EXTRACTORS: Dict[str, FileExtractor] = {
     ".doc": FileExtractor(extract_text_from_doc, "DOC"),
@@ -29,7 +33,7 @@ FILE_EXTRACTORS: Dict[str, FileExtractor] = {
 SUPPORTED_FILE_TYPES = ", ".join(extractor.file_type for extractor in FILE_EXTRACTORS.values())
 
 
-async def extract_text(file: UploadFile) -> str:
+async def extract_text_from_file(file: UploadFile) -> str:
     try:
         content = await file.read()
 
@@ -47,6 +51,25 @@ async def extract_text(file: UploadFile) -> str:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Помилка обробки файлу: {str(e)}")
+
+
+async def extract_text_from_url(url: str) -> str:
+    response = fetch_url_content(url)
+    content_type = response.headers.get("Content-Type", "").lower()
+
+    if "application/pdf" in content_type or url.lower().endswith(".pdf"):
+        return extract_text_from_url_pdf(response.content)
+
+    return extract_text_from_url_page(response.content)
+
+
+async def get_or_save_text(session: AsyncSession, content: str, source_type: str) -> int:
+    text_id = await get_text_id_by_content(session, content)
+
+    if text_id is None:
+        text_id = await save_text(session, content, source_type)
+
+    return text_id
 
 
 async def get_text_id_by_content(session: AsyncSession, content: str) -> Optional[int]:
