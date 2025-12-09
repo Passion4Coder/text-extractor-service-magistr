@@ -10,7 +10,7 @@ import textract
 def textract_process(content: bytes, extension: str) -> str:
     with tempfile.NamedTemporaryFile(suffix=extension) as fp:
         fp.write(content)
-        return textract.process(fp.name)
+        return textract.process(fp.name).decode()
 
 
 def extract_text_from_doc(content: bytes, extension: str) -> str:

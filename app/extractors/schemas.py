@@ -1,6 +1,6 @@
 from typing import Callable
 
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 
 
 class ExtractTextResponse(BaseModel):
@@ -8,6 +8,10 @@ class ExtractTextResponse(BaseModel):
 
     def __init__(self, text_id: int):
         super().__init__(text_id=text_id)
+
+
+class ProcessInputRequest(BaseModel):
+    input: constr(min_length=2, strip_whitespace=True)
 
 
 class FileExtractor:

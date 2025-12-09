@@ -16,10 +16,10 @@ from app.extractors.file_extractors import (
 from app.extractors.models import TextOrm
 from app.extractors.schemas import FileExtractor
 from app.extractors.url_extractors import (
-    extract_text_from_url_page,
-    extract_text_from_url_pdf,
+    extract_text_from_url_content,
+    extract_text_from_url_pdf_content,
 )
-from app.extractors.utils import fetch_url_content, get_file_extension
+from app.extractors.utils import fetch_url, get_file_extension
 
 FILE_EXTRACTORS: Dict[str, FileExtractor] = {
     ".doc": FileExtractor(extract_text_from_doc, "DOC"),
@@ -54,13 +54,13 @@ async def extract_text_from_file(file: UploadFile) -> str:
 
 
 async def extract_text_from_url(url: str) -> str:
-    response = fetch_url_content(url)
+    response = fetch_url(url)
     content_type = response.headers.get("Content-Type", "").lower()
 
     if "application/pdf" in content_type or url.lower().endswith(".pdf"):
-        return extract_text_from_url_pdf(response.content)
+        return extract_text_from_url_pdf_content(response.content)
 
-    return extract_text_from_url_page(response.content)
+    return extract_text_from_url_content(response.content)
 
 
 async def get_or_save_text(session: AsyncSession, content: str, source_type: str) -> int:
