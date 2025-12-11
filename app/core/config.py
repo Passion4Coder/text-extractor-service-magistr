@@ -13,7 +13,12 @@ class Config(BaseSettings):
 
     DEBUG: bool = True
 
-    model_config = SettingsConfigDict(env_file=os.path.join(BASE_DIR, ".env"), env_file_encoding="utf-8")
+    OLLAMA_HOST: str
+    LLM_SUMMARY_MODEL: str
+
+    model_config = SettingsConfigDict(
+        env_file=os.path.join(BASE_DIR, ".env"), env_file_encoding="utf-8"
+    )
 
 
 settings = Config()

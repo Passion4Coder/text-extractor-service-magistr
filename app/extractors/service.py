@@ -4,7 +4,6 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import async_session_factory
 from app.extractors.file_extractors import (
     extract_text_from_csv,
     extract_text_from_doc,
@@ -13,6 +12,7 @@ from app.extractors.file_extractors import (
     extract_text_from_pptx,
     extract_text_from_txt,
 )
+from app.extractors.generate_text_title import generate_text_title
 from app.extractors.models import TextOrm
 from app.extractors.schemas import FileExtractor
 from app.extractors.url_extractors import (
@@ -30,7 +30,9 @@ FILE_EXTRACTORS: Dict[str, FileExtractor] = {
     ".csv": FileExtractor(extract_text_from_csv, "CSV"),
 }
 
-SUPPORTED_FILE_TYPES = ", ".join(extractor.file_type for extractor in FILE_EXTRACTORS.values())
+SUPPORTED_FILE_TYPES = ", ".join(
+    extractor.file_type for extractor in FILE_EXTRACTORS.values()
+)
 
 
 async def extract_text_from_file(file: UploadFile) -> str:
@@ -44,7 +46,8 @@ async def extract_text_from_file(file: UploadFile) -> str:
             text = extractor.fn(content, extension)
         else:
             raise HTTPException(
-                status_code=400, detail=f"Непідтримуваний формат файлу. Підтримуються: {SUPPORTED_FILE_TYPES}"
+                status_code=400,
+                detail=f"Непідтримуваний формат файлу. Підтримуються: {SUPPORTED_FILE_TYPES}",
             )
 
         return text
@@ -63,7 +66,9 @@ async def extract_text_from_url(url: str) -> str:
     return extract_text_from_url_content(response.content)
 
 
-async def get_or_save_text(session: AsyncSession, content: str, source_type: str) -> int:
+async def get_or_save_text(
+    session: AsyncSession, content: str, source_type: str
+) -> int:
     text_id = await get_text_id_by_content(session, content)
 
     if text_id is None:
@@ -73,19 +78,23 @@ async def get_or_save_text(session: AsyncSession, content: str, source_type: str
 
 
 async def get_text_id_by_content(session: AsyncSession, content: str) -> Optional[int]:
-    async with async_session_factory() as session:
-        text_result = await session.execute(select(TextOrm).where(TextOrm.content == content))
-        text_entity = text_result.scalar_one_or_none()
+    text_result = await session.execute(
+        select(TextOrm).where(TextOrm.content == content)
+    )
+    text_entity = text_result.scalar_one_or_none()
 
-        if text_entity:
-            return text_entity.id
+    if text_entity:
+        return text_entity.id
 
 
 async def save_text(session: AsyncSession, text: str, source_type: str) -> int:
-    async with async_session_factory() as session:
-        text_entity = TextOrm(content=text, language="uk", source_type=source_type)
+    title = await generate_text_title(text)
 
-        session.add(text_entity)
-        await session.commit()
+    text_entity = TextOrm(
+        title=title, content=text, language="uk", source_type=source_type
+    )
 
-        return text_entity.id
+    session.add(text_entity)
+    await session.commit()
+
+    return text_entity.id
