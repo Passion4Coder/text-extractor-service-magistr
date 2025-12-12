@@ -7,7 +7,12 @@ services:
     ports:
       - '8002:8002'
     environment:
-      POSTGRES_URL: 'postgresql+asyncpg://postgres:postgres@db:5432/text_analysis_db'
+      # DB
+      POSTGRES_URL: 'postgresql+asyncpg://postgres:postgres@localhost:5432/text_analysis_db'
+      # Ollama
+      OLLAMA_HOST: 'http://localhost:11434'
+      LLM_SUMMARY_MODEL: mistral:latest
+      # CORS
       CORS_ORIGINS: http://localhost:4200
     working_dir: /app
     volumes:
