@@ -30,9 +30,7 @@ FILE_EXTRACTORS: Dict[str, FileExtractor] = {
     ".csv": FileExtractor(extract_text_from_csv, "CSV"),
 }
 
-SUPPORTED_FILE_TYPES = ", ".join(
-    extractor.file_type for extractor in FILE_EXTRACTORS.values()
-)
+SUPPORTED_FILE_TYPES = ", ".join(extractor.file_type for extractor in FILE_EXTRACTORS.values())
 
 
 async def extract_text_from_file(file: UploadFile) -> str:
@@ -66,9 +64,7 @@ async def extract_text_from_url(url: str) -> str:
     return extract_text_from_url_content(response.content)
 
 
-async def get_or_save_text(
-    session: AsyncSession, content: str, source_type: str
-) -> int:
+async def get_or_save_text(session: AsyncSession, content: str, source_type: str) -> int:
     text_id = await get_text_id_by_content(session, content)
 
     if text_id is None:
@@ -78,20 +74,24 @@ async def get_or_save_text(
 
 
 async def get_text_id_by_content(session: AsyncSession, content: str) -> Optional[int]:
-    text_result = await session.execute(
-        select(TextOrm).where(TextOrm.content == content)
-    )
+    text_result = await session.execute(select(TextOrm).where(TextOrm.content == content))
     text_entity = text_result.scalar_one_or_none()
 
     if text_entity:
         return text_entity.id
 
 
-async def save_text(session: AsyncSession, text: str, source_type: str) -> int:
+async def save_text(session: AsyncSession, text: str, source_type: str, language: str = "uk") -> int:
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="Текст не може бути порожнім")
+
     title = await generate_text_title(text)
 
     text_entity = TextOrm(
-        title=title, content=text, language="uk", source_type=source_type
+        title=title,
+        content=text,
+        language=language,
+        source_type=source_type,
     )
 
     session.add(text_entity)
